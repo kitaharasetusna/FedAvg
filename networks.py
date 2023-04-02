@@ -51,6 +51,7 @@ def train(model, dataloader, optimizer):
         print(f'loss: {loss.item()}')
         loss.backward()
         optimizer.step()
+        torch.cuda.empty_cache()
 
 # define the Federated Averaging function
 def fed_avg(model, data, lr=0.01, num_epochs=10, num_clients=4):

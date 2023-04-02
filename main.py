@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from torch.utils.data import Subset
-from torch.multiprocessing import Process, Manager
 
 # Define the two-layer neural network as the local model
 class TwoLayerNet(nn.Module):
@@ -43,7 +42,7 @@ def server_update(models):
     return new_state_dict
 
 # Define the main Federated Learning function
-def federated_learning(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device, stopping_event, global_model_dict):
+def federated_learning(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device):
     # Split the train data into subsets for each client
     subset_indices = torch.linspace(0, len(train_data)-1, steps=num_clients+1).round().tolist()
     client_datasets = [Subset(train_data, range(int(subset_indices[i]), int(subset_indices[i+1]))) for i in range(num_clients)]
@@ -57,8 +56,6 @@ def federated_learning(num_rounds, train_data, num_clients, client_batch_size, l
     optimizer = optim.SGD(global_model.parameters(), lr=learning_rate)
 
     for round in range(num_rounds):
-        if stopping_event.is_set():
-            break
         print(f"Round {round+1} started...")
         client_models = []
         client_losses = []
@@ -73,47 +70,21 @@ def federated_learning(num_rounds, train_data, num_clients, client_batch_size, l
         global_state_dict = server_update(client_models)
         global_model.load_state_dict(global_state_dict)
         print(f"Round {round+1} finished, global loss: {sum(client_losses)/len(client_losses):.4f}")
-        global_model_dict[round+1] = global_model.state_dict()
 
     return global_model
 
-if __name__ == '__main__':
-    # Set the hyperparameters
-    num_rounds = 10
-    num_clients = 10
-    client_batch_size = 32
-    learning_rate = 0.1
+# Set the hyperparameters
+num_rounds = 10
+num_clients = 10
+client_batch_size = 32
+learning_rate = 0.1
 
-    # Load the MNIST dataset
-    train_data = MNIST(root='./data', train=True, download=True, transform=ToTensor())
+# Load the MNIST dataset
+train_data = MNIST(root='./data', train=True, download=True, transform=ToTensor())
 
-    # Check if GPU is available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Create a Manager to share state between processes
-    manager = Manager()
-    stopping_event = manager.Event()
-    global_model_dict = manager.dict()
+# Run the Federated Learning process
+global_model = federated_learning(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device)
 
-    # Run the Federated Learning process on multiple processes
-    processes = []
-    for i in range(4):
-        p = Process(target=federated_learning, args=(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device, stopping_event, global_model_dict))
-        p.start()
-        processes.append(p)
-
-    # Wait for user to stop the program
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt:
-        stopping_event.set()
-
-    # Join the processes and retrieve the final global model
-    for p in processes:
-        p.join()
-
-    global_model_state_dict = server_update(list(global_model_dict.values()))
-    global_model = TwoLayerNet(input_size=28*28, hidden_size=32, output_size=10).to(device)
-    global_model.load_state_dict(global_model_state_dict)
-    print("Training completed!")
