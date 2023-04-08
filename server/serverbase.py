@@ -19,7 +19,10 @@ class ServerBase():
         self._client_datasets = [Subset(train_data, range(int(self._subset_indices[i]), int(self._subset_indices[i+2]))) for i in range(num_clients)]
         self._client_loaders = [DataLoader(self._client_datasets[i], batch_size=client_batch_size, shuffle=True) for i in range(num_clients)]
         self._clients_models = [ TwoLayerNet(input_size=28*28, hidden_size=32, output_size=10).to(device) for i in range(num_clients)]
-        self._clients_optims = [optim.SGD(self._clients_models[i].parameters(), lr=learning_rate) for i in range(num_clients)]
+        # self._clients_optims = [optim.SGD(self._clients_models[i].parameters(), lr=learning_rate) for i in range(num_clients)]
+        self._clients_optims = [optim.Adam(self._clients_models[i].parameters(), \
+                                           lr=learning_rate) for i in range(num_clients)]
+        
         self._clients = [ClientBase(self._client_loaders[i], self._clients_models[i], self._clients_optims[i], device, 1, client_batch_size) for i in range(num_clients)]
 
         self._global_model = TwoLayerNet(input_size=28*28, hidden_size=32, output_size=10).to(device)
@@ -38,7 +41,7 @@ class ServerBase():
                 cur_user = self._clients[i]
                 # TODO: change this into a fucntion of class
                 cur_user._model.load_state_dict(self._global_model.state_dict())
-                client_state_dict, client_loss = cur_user.client_update()
+                client_state_dict, client_loss = cur_user.client_update(epoch=round+1)
                 client_models.append(client_state_dict)
                 client_losses.append(client_loss)
                 print(f"Client {i+1} loss: {client_loss:.4f}")
@@ -52,4 +55,12 @@ class ServerBase():
         for key in models[0].keys():
             new_state_dict[key] = torch.stack([models[i][key] for i in range(len(models))], dim=0).mean(dim=0)
         return new_state_dict
+
+    def test_acc(self, test_loader):
+       self._global_model.eval() 
+       with torch.no_grad():
+           for x, y in test_loader:
+               print(f' {self._global_model(x)} {y}')
+               import sys
+               sys.exit()
     
