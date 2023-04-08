@@ -12,7 +12,7 @@ from client.clientbase import ClientBase
 from server.serverbase import ServerBase
 
 from models.my_NN import TwoLayerNet
-from utils import ExpSetting
+from my_utils.utils import ExpSetting
 
 
 
@@ -25,21 +25,17 @@ def federated_learning(num_rounds, train_data, num_clients, client_batch_size, l
     test_loader = MNIST(root='./data', train=True, download=True, transform=ToTensor())
     return server._global_model 
 
+if __name__ == '__main__':
+    # Set the hyperparameters
+    exp_settings = ExpSetting()
+    num_rounds, num_clients, _, client_batch_size, learning_rate = exp_settings.get_options()
 
-# Set the hyperparameters
-exp_settings = ExpSetting()
-num_rounds, num_clients, _, client_batch_size = exp_settings.get_options()
+    # Load the MNIST dataset
+    train_data = MNIST(root='./data', train=True, download=True, transform=ToTensor())
 
+    # Check if GPU is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-learning_rate = 0.001
-
-# Load the MNIST dataset
-train_data = MNIST(root='./data', train=True, download=True, transform=ToTensor())
-
-# Check if GPU is available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Run the Federated Learning process
-global_model = federated_learning(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device)
+    # Run the Federated Learning process
+    global_model = federated_learning(num_rounds, train_data, num_clients, client_batch_size, learning_rate, device)
 

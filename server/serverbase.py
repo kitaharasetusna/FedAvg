@@ -32,22 +32,25 @@ class ServerBase():
         self._optimizer = optim.SGD(self._global_model.parameters(), lr=learning_rate)
 
     def update_server(self, T):
+        client_acc = []
         for round in range(T):
             print(f"Round {round+1} started...")
             client_models = []
             client_losses = []
+            client_accs = []
             for i in range(self._num_clients):
                 # client_model = TwoLayerNet(input_size=28*28, hidden_size=32, output_size=10).to(device)
                 cur_user = self._clients[i]
                 # TODO: change this into a fucntion of class
                 cur_user._model.load_state_dict(self._global_model.state_dict())
-                client_state_dict, client_loss = cur_user.client_update(epoch=round+1)
+                client_state_dict, client_loss, client_acc = cur_user.client_update(epoch=round+1)
                 client_models.append(client_state_dict)
                 client_losses.append(client_loss)
-                print(f"Client {i+1} loss: {client_loss:.4f}")
+                client_accs.append(client_acc)
+                print(f"Client {i+1} loss: {client_loss:.4f}, accuracy {client_acc: .4f} ")
             global_state_dict = self.server_update(client_models)
             self._global_model.load_state_dict(global_state_dict)
-            print(f"Round {round+1} finished, global loss: {sum(client_losses)/len(client_losses):.4f}")
+            print(f"Round {round+1} finished, global loss: {sum(client_losses)/len(client_losses):.4f}, global accuracy: {sum(client_accs)/len(client_accs): .4f}")
 
     # Define the server update function
     def server_update(self, models):
