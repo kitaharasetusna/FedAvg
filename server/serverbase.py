@@ -51,6 +51,7 @@ class ServerBase():
             global_state_dict = self.server_update(client_models)
             self._global_model.load_state_dict(global_state_dict)
             print(f"Round {round+1} finished, global loss: {sum(client_losses)/len(client_losses):.4f}, global accuracy: {sum(client_accs)/len(client_accs): .4f}")
+        return sum(client_accs)/len(client_accs) 
 
     # Define the server update function
     def server_update(self, models):
