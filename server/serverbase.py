@@ -10,6 +10,8 @@ sys.path.append('../client')
 from client.clientbase import ClientBase
 from my_utils.utils import *
 
+import torch.multiprocessing as mp
+
 class ServerBase():
     def __init__(self, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
         shards_num):
@@ -43,20 +45,32 @@ class ServerBase():
             client_models = []
             client_losses = []
             client_accs = []
+           
+            #multi-pro pool
+            # pool = mp.Pool(self._num_clients)
+            # results = [] 
             for i in range(self._num_clients):
+                #TODO: do this in parallel
                 cur_user = self._clients[i]
                 #  x_{i, 0}^t = x_t   
                 cur_user._model.load_state_dict(self._global_model.state_dict())
                 # x{i, K}^t = CLIENTOPT
-                client_state_dict, client_loss, client_acc = cur_user.client_update(epoch=round+1)
+
+                # result = pool.apply_async(cur_user.client_update, args=(round+1,i))
+                client_state_dict, client_loss, client_acc = cur_user.client_update(epoch=round+1, id=i)
+                # results.append(result)
                 client_models.append(client_state_dict)
                 client_losses.append(client_loss)
                 client_accs.append(client_acc)
-                print(f"Client {i+1} loss: {client_loss:.4f}, accuracy {client_acc: .4f} ")
+                # print(f"Client {i+1} loss: {client_loss:.4f}, accuracy {client_acc: .4f} ")
+            # for result in results:
+            #     client_state_dict, client_loss, client_acc = result.get()
             # x_{t+1} = \frac{1}{S} \sum_{i \in S} \delta_i^t
             global_state_dict = self.server_update(client_models)
             self._global_model.load_state_dict(global_state_dict)
             print(f"Round {round+1} finished, global loss: {sum(client_losses)/len(client_losses):.4f}, global accuracy: {sum(client_accs)/len(client_accs): .4f}")
+            # pool.close()
+            # pool.join()
         return sum(client_accs)/len(client_accs) 
 
     # Define the server update function

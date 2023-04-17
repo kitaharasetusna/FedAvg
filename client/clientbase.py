@@ -12,8 +12,9 @@ class ClientBase():
         self._E = E
         self._B = B
 
-    def client_update(self, epoch):
+    def client_update(self, epoch, id):
         '''ClientUpdate in FedAVG;'''
+        # print(f'client {id+1} is started to run.')
         self._model.train()
         criterion = nn.CrossEntropyLoss()
         running_loss = 0
@@ -38,5 +39,6 @@ class ClientBase():
             num_equal = (pred_y == labels).sum().item()
             acc_num += num_equal
             total_num += labels.size()[0] 
+        print(f"Client {id+1} Ended-loss: {running_loss / len(self._dataloader.dataset)*self._E:.4f}, accuracy {acc_num/total_num: .4f} ")
         return self._model.state_dict(), running_loss / len(self._dataloader.dataset)*self._E, acc_num/total_num
     
