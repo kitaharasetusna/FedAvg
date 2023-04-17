@@ -1,4 +1,12 @@
 import argparse
+import sys
+sys.path.append('../')
+from models.my_NN import TwoLayerNet
+
+function_map = {
+    "TwoLayerNet": TwoLayerNet
+}
+
 
 class ExpSetting():
     def __init__(self):
@@ -7,11 +15,11 @@ class ExpSetting():
             help='number of rounds')
         self.parser.add_argument('--num_client', type=int, default=10, \
             help='number of clients')
-        self.parser.add_argument('-K', '--round_client', type=int, default=1, \
+        self.parser.add_argument('-E', '--round_client', type=int, default=5, \
             help='number of rounds on clients')
-        self.parser.add_argument('-b', '--size_batch', type=int, default=32, \
+        self.parser.add_argument('-B', '--size_batch', type=int, default=10, \
             help='batch size b on client')
-        self.parser.add_argument('--eta_l', type=float, default=0.001, \
+        self.parser.add_argument('--eta_l', type=float, default=1e-3, \
             help='learning rate in client update')
         
         

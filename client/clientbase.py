@@ -38,5 +38,5 @@ class ClientBase():
             num_equal = (pred_y == labels).sum().item()
             acc_num += num_equal
             total_num += labels.size()[0] 
-        return self._model.state_dict(), running_loss / len(self._dataloader.dataset), acc_num/total_num
+        return self._model.state_dict(), running_loss / len(self._dataloader.dataset)*self._E, acc_num/total_num
     
