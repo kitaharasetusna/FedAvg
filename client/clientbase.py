@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 import numpy as np
+import copy
 
 class ClientBase():
     '''base class for FL learning'''
@@ -12,10 +13,12 @@ class ClientBase():
         self._E = E
         self._B = B
 
-    def client_update(self, epoch, id):
+    def client_update(self, epoch, id, global_model):
         '''ClientUpdate in FedAVG;'''
         # print(f'client {id+1} is started to run.')
+        self._model.load_state_dict(global_model)
         self._model.train()
+        self._model.to(device=self._device)
         criterion = nn.CrossEntropyLoss()
         running_loss = 0
         num_euqal = 0
@@ -40,5 +43,5 @@ class ClientBase():
             acc_num += num_equal
             total_num += labels.size()[0] 
         print(f"Client {id+1} Ended-loss: {running_loss / len(self._dataloader.dataset)*self._E:.4f}, accuracy {acc_num/total_num: .4f} ")
-        return self._model.state_dict(), running_loss / len(self._dataloader.dataset)*self._E, acc_num/total_num
+        return copy.deepcopy(self._model.cpu().state_dict()), running_loss / len(self._dataloader.dataset)*self._E, acc_num/total_num
     
