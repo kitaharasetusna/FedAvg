@@ -15,9 +15,9 @@ class ExpSetting():
             help='number of rounds')
         self.parser.add_argument('--num_client', type=int, default=10, \
             help='number of clients')
-        self.parser.add_argument('-E', '--round_client', type=int, default=5, \
+        self.parser.add_argument('-E', '--round_client', type=int, default=200, \
             help='number of rounds on clients')
-        self.parser.add_argument('-B', '--size_batch', type=int, default=10, \
+        self.parser.add_argument('-B', '--size_batch', type=int, default=32, \
             help='batch size b on client')
         self.parser.add_argument('--eta_l', type=float, default=1e-3, \
             help='learning rate in client update')
