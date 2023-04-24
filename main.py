@@ -23,7 +23,7 @@ def federated_learning(T, train_data, num_clients, E, B, learning_rate, device, 
     # Split the train data into subsets for each client
     # data, C?, B, lr, device, shard_num
     server = ServerOPT('TwoLayerNet', train_data, num_clients, E, B, learning_rate, device, shards_num)  
-    fin_acc = server.update_server(T)
+    fin_acc = server.update_server_thread_res(T)
     test_loader = MNIST(root='./data', train=True, download=True, transform=ToTensor())
     return server._global_model , fin_acc
 
