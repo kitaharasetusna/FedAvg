@@ -11,7 +11,7 @@ function_map = {
 class ExpSetting():
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='experiment settings')
-        self.parser.add_argument('-T', '--num_round', type=int, default=64, \
+        self.parser.add_argument('-T', '--num_round', type=int, default=10, \
             help='number of rounds')
         self.parser.add_argument('--num_client', type=int, default=10, \
             help='number of clients')
