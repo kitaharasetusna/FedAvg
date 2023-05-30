@@ -21,10 +21,13 @@ class ExpSetting():
             help='batch size b on client')
         self.parser.add_argument('--eta_l', type=float, default=1e-3, \
             help='learning rate in client update')
+        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt'], \
+            help='choose algorithm for FL learning')
         
         
     def get_options(self):
         args = self.parser.parse_args()
-        return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l
+        print(f'running algorithm {args.algo}...')
+        return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l, args.algo
     
  
