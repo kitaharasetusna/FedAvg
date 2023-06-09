@@ -1,5 +1,5 @@
 # FedAvg
-Simple implementation of fedavg for learning and researching purpose <br>
+Simple implementation of fedavg, fedopt, adagrade(finished) and other adaptive learning(TODO) for learning and researching purpose <br>
 
 # 1. Training the model
 To run this code, run `experiment.py` use: <br>
