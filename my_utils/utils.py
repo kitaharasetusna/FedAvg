@@ -22,15 +22,18 @@ class ExpSetting():
         self.parser.add_argument('-B', '--size_batch', type=int, default=32, \
             help='batch size b on client')
         self.parser.add_argument('--eta_l', type=float, default=1e-3, \
-            help='learning rate in client update')
-        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt'], \
+            help='learning rate in client update, f_l in the paper')
+        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt', 'fedadag'], \
             help='choose algorithm for FL learning')
+        self.parser.add_argument('--beta_1', type=float, default=0.9)
+        self.parser.add_argument('--eta', type=float, default=2/3)
+        self.parser.add_argument('--tau', type=float, default=1e-3)
         
         
     def get_options(self):
         args = self.parser.parse_args()
         print(f'running algorithm {args.algo}..., T={args.num_round}, num_client={args.num_client},  \
               E={args.round_client}, B={args.size_batch}, lr={args.eta_l}, C={args.client_ratio}')
-        return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l, args.algo, args.client_ratio
+        return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l, args.algo, args.client_ratio, args.beta_1, \
+            args.eta, args.tau
     
- 

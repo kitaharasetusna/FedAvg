@@ -16,6 +16,10 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import random
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 class ServerAVG():
     def __init__(self, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
         shards_num, client_ratio):
@@ -50,15 +54,33 @@ class ServerAVG():
         self._global_model.train()
     
     def gen_client_id(self):
-        print (int(self._num_clients*self._client_ratio))
+        print (f'We are selecting {int(self._num_clients*self._client_ratio)} for fedavg...')
         random_numbers = random.sample(range(self._num_clients), int(self._num_clients*self._client_ratio))
         return random_numbers
    
+    def plot_acc(self, rounds, acc, T):
+        print(f'debuging... {rounds} {acc}')
+        plt.scatter(rounds, acc, color='blue', label='accuracy')
+        # Fit a line to the data points
+        coefficients = np.polyfit(rounds, acc, 1)
+        slope = coefficients[0]
+        intercept = coefficients[1]
+        # Create a line using the slope and intercept
+        line_x = np.linspace(0, 1, 100)
+        line_y = slope * line_x + intercept
+        plt.xlabel('round')
+        plt.ylabel('accuracy')
+        plt.legend()
+        plt.show()
+            
     def update_server_thread_res(self, T):
         '''
         FedAVG
         '''
         client_acc = []
+        glob_acc = []
+        rounds = np.arange(0, T, 20)
+        print(T/20)
         # 2: for t=0, ..., T-1 do
         for round in range(T):
             print(f"Round {round+1} started..., picking {self._client_ratio} of all clients")
@@ -88,6 +110,9 @@ class ServerAVG():
             print(f"Round {round+1} finished, global loss:  \
                 {sum(client_losses)/len(client_losses):.4f},  \
                     global accuracy: {sum(client_accs)/len(client_accs): .4f}")
+            if (round+1)%20==0 and round!=0:
+                glob_acc.append(sum(client_accs)/len(client_accs))
+        self.plot_acc(rounds, glob_acc, T)
         return sum(client_accs)/len(client_accs) 
     
     def server_update(self, models):

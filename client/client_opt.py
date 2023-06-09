@@ -54,6 +54,7 @@ class ClientOPT(ClientAVG):
         self._model.train()
         return diff_dict, \
             running_loss / (len(self._dataloader.dataset)*self._E), acc_num/total_num
+        
     
     
     
