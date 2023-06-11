@@ -22,9 +22,10 @@ import math
 class ServerFedAdaGrade(ServerOPT):
     # client learning rate: eta_l
     # eta: server learning rate
-    def __init__(self, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, initial_mom={}, \
+    def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, initial_mom={}, \
         beta_1 = 0.9, eta= -1, tau=1e-3):
-        super().__init__(network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio)
+        print(client_ratio)
+        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio)
         # m_0
         self._cur_mom = {}
         self._veloc = {}

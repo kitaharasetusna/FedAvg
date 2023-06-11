@@ -8,6 +8,7 @@ import sys
 sys.path.append('../client')
 from client.client_avg import ClientAVG
 from my_utils.utils import *
+from my_utils.dataloader import DatasetSplit
 
 import torch.multiprocessing as mp
 from torch.multiprocessing import Process
@@ -21,23 +22,37 @@ import numpy as np
 
 
 class ServerAVG():
-    def __init__(self, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
+    def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
         shards_num, client_ratio):
         #TODO: selcet data
         # intermediate parameters
         self._num_clients = num_clients
-        self._subset_indices = torch.linspace(0, len(train_data)-1,  \
-            steps=shards_num+1).round().tolist()
-        self._client_datasets = [Subset(train_data, range(int(self._subset_indices[i]),  \
-            int(self._subset_indices[i+2]))) for i in range(num_clients)]
+        
 
+        # parameters for Clients
+        if dataset=='shakespeare':
+            dict_users = train_data.get_client_dic()
+            num_users = len(dict_users)
+            self._client_datasets = [DatasetSplit(train_data, dict_users[idx]) for idx in range(num_users)]
+            self._clients_models = [function_map[network]().to(device) for i in range(num_clients)]
+            # print(f'{self._client_datasets[0][0][0].shape} {self._client_datasets[0][0][1]} {self._client_datasets[0][0][0].shape}')
+            # print(self._client_datasets[1])
+            # import sys; sys.exit() 
+        elif dataset=='MNIST':
+            self._subset_indices = torch.linspace(0, len(train_data)-1,  \
+            steps=shards_num+1).round().tolist() 
+            self._client_datasets = [Subset(train_data, range(int(self._subset_indices[i]),  \
+            int(self._subset_indices[i+2]))) for i in range(num_clients)]
+            self._clients_models = [function_map[network](input_size=28*28,  \
+                hidden_size=200, output_size=10).to(device) for i in range(num_clients)]
+        else:
+            raise ValueError("The dataset you provides is no in 'MNIST', 'shakepeare' or things like that.") 
         
         # parameters for Clients
         self._client_loaders = [DataLoader(self._client_datasets[i],  
                                            batch_size=client_batch_size, 
             shuffle=True) for i in range(num_clients)]
-        self._clients_models = [function_map[network](input_size=28*28,  \
-            hidden_size=200, output_size=10).to(device) for i in range(num_clients)]
+        
         self._clients_optims = [optim.Adam(self._clients_models[i].parameters(), \
                                            lr=learning_rate) for i in range(num_clients)] 
         
@@ -48,7 +63,12 @@ class ServerAVG():
         # parameters for the Server
         self._lr = learning_rate
         self._E = E
-        self._global_model = function_map[network](input_size=28*28, hidden_size=200, output_size=10).to(device)
+
+        if dataset=='MNIST':
+            self._global_model = function_map[network](input_size=28*28, hidden_size=200, output_size=10).to(device)
+        elif dataset=="shakespeare":
+            self._global_model = function_map[network]().to(device)
+
         self._client_ratio = client_ratio
         
         self._global_model.train()

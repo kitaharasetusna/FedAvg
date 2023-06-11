@@ -30,3 +30,19 @@ class TwoLayerNet(nn.Module):
         # x = x.view(x.size(0), -1) # (batch, 32,7,7) -> (batch, 32*7*7)
         # output = self.out(x)
         return output
+
+
+class CharLSTM(nn.Module):
+    def __init__(self):
+        super(CharLSTM, self).__init__()
+        self.embed = nn.Embedding(80, 8)
+        self.lstm = nn.LSTM(8, 256, 2, batch_first=True)
+        # self.h0 = torch.zeros(2, batch_size, 256).requires_grad_()
+        self.drop = nn.Dropout()
+        self.out = nn.Linear(256, 90)
+
+    def forward(self, x):
+        x = self.embed(x)
+        x, hidden = self.lstm(x)
+        x = self.drop(x)
+        return self.out(x[:, -1, :])
