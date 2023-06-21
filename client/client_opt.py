@@ -9,7 +9,7 @@ class ClientOPT(ClientAVG):
     def get_static_dict_difference(self, A, B):
         diff_dict = {}
         for key in B.keys():
-                diff_dict[key] = B[key] - A[key]
+                diff_dict[key] = B[key].to('cpu') - A[key].to('cpu')
         return diff_dict
     
     def client_update(self, epoch, id, global_model):

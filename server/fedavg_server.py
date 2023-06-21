@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.data import Subset
+from torchvision.transforms import ToTensor
 
 import sys
 sys.path.append('../client')
@@ -19,17 +20,25 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
+import os
+
+from torchvision.datasets import MNIST
+from my_utils.dataset import ShakeSpeare
 
 
 class ServerAVG():
     def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
-        shards_num, client_ratio):
-        #TODO: selcet data
+        shards_num, client_ratio, folder, algo='fedavg'):
+        self.algo = algo
+        # TODO: clean the code and adjust heritance in fedavg
+        #TODO: keep eye on MNIST model, it can be updated from scalar to variable 
         # intermediate parameters
         self._num_clients = num_clients
         
 
         # parameters for Clients
+        self.dataset = dataset
         if dataset=='shakespeare':
             dict_users = train_data.get_client_dic()
             num_users = len(dict_users)
@@ -48,17 +57,27 @@ class ServerAVG():
         else:
             raise ValueError("The dataset you provides is no in 'MNIST', 'shakepeare' or things like that.") 
         
-        # parameters for Clients
-        self._client_loaders = [DataLoader(self._client_datasets[i],  
-                                           batch_size=client_batch_size, 
-            shuffle=True) for i in range(num_clients)]
-        
         self._clients_optims = [optim.Adam(self._clients_models[i].parameters(), \
-                                           lr=learning_rate) for i in range(num_clients)] 
+                                           lr=learning_rate) for i in range(num_clients)]  
+        # parameters for Clients
+        if client_batch_size=='inf':
+            self._client_loaders = [DataLoader(self._client_datasets[i],  
+                                           batch_size=len(self._client_datasets[0]), 
+            shuffle=True) for i in range(num_clients)]
+            self._clients = [client_map[algo](self._client_loaders[i], \
+                self._clients_models[i], self._clients_optims[i],  \
+                    device, E, len(self._client_datasets[0])) for i in range(num_clients)]
+            self._B = len(self._client_datasets[0]) 
+        else:
+            batch_size = int(client_batch_size)
+            self._client_loaders = [DataLoader(self._client_datasets[i],  
+                                            batch_size=batch_size, 
+                shuffle=True) for i in range(num_clients)]
+            self._clients = [client_map[algo](self._client_loaders[i], \
+                self._clients_models[i], self._clients_optims[i],  \
+                    device, E, batch_size) for i in range(num_clients)]
+            self._B = batch_size
         
-        self._clients = [ClientAVG(self._client_loaders[i], \
-            self._clients_models[i], self._clients_optims[i],  \
-                device, E, client_batch_size) for i in range(num_clients)]
         
         # parameters for the Server
         self._lr = learning_rate
@@ -70,38 +89,50 @@ class ServerAVG():
             self._global_model = function_map[network]().to(device)
 
         self._client_ratio = client_ratio
-        
+       
+        self.folder = folder
+        self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_eta_l_{learning_rate}'
+       
+        print(self.folder)
+        print(self.pkl_path+str(10)+'.png')
+
         self._global_model.train()
-    
+        
+    '''
+    TOOL FUNC
+    help splitting dataset for federated learning
+    TODO:
+    ''' 
     def gen_client_id(self):
-        print (f'We are selecting {int(self._num_clients*self._client_ratio)} for fedavg...')
+        print (f'We are selecting {int(self._num_clients*self._client_ratio)} for {self.algo}...')
         random_numbers = random.sample(range(self._num_clients), int(self._num_clients*self._client_ratio))
         return random_numbers
-   
+    '''
+    TOOL FUNC
+    draws pictures given 
+    '''
     def plot_acc(self, rounds, acc, T):
-        print(f'debuging... {rounds} {acc}')
-        plt.scatter(rounds, acc, color='blue', label='accuracy')
-        # Fit a line to the data points
-        coefficients = np.polyfit(rounds, acc, 1)
-        slope = coefficients[0]
-        intercept = coefficients[1]
-        # Create a line using the slope and intercept
-        line_x = np.linspace(0, 1, 100)
-        line_y = slope * line_x + intercept
+        print(f'debuging... {len(rounds)} {len(acc)}')
+        plt.plot(rounds, acc, color='blue', label='accuracy')
+        
         plt.xlabel('round')
         plt.ylabel('accuracy')
         plt.legend()
-        plt.show()
-            
-    def update_server_thread_res(self, T):
-        '''
-        FedAVG
-        '''
-        client_acc = []
-        glob_acc = []
-        rounds = np.arange(0, T, 20)
-        print(T/20)
+        plt.xlim(0, 100)
+        plt.savefig(self.folder+self.pkl_path+'/'+f'E_{self._E} B_{self._B}'+'.png')
+    ''' 
+    TOOL FUNC
+    just averaging the all static models
+    '''  
+    def server_update(self, models):
+        new_state_dict = {}
+        for key in models[0].keys():
+            new_state_dict[key] = torch.stack([models[i][key] for i in range(len(models))], dim=0).mean(dim=0)
+        return new_state_dict
+
+    def aggregate(self, glob_acc, T, test_loader):
         # 2: for t=0, ..., T-1 do
+        early_stop_epoch = None
         for round in range(T):
             print(f"Round {round+1} started..., picking {self._client_ratio} of all clients")
             client_models = []
@@ -127,27 +158,72 @@ class ServerAVG():
             
             global_state_dict = self.server_update(client_models)
             self._global_model.load_state_dict(global_state_dict)
+            fin_acc = self.test_acc(test_loader=test_loader)
+            # lenth: T
+            glob_acc.append(fin_acc)
+            if fin_acc>0.95:
+                early_stop_epoch = round+1
+                print('Congrates, Eearly stop, have reached 0.99 acc!')
+                break
+            
             print(f"Round {round+1} finished, global loss:  \
                 {sum(client_losses)/len(client_losses):.4f},  \
-                    global accuracy: {sum(client_accs)/len(client_accs): .4f}")
-            if (round+1)%20==0 and round!=0:
-                glob_acc.append(sum(client_accs)/len(client_accs))
-        self.plot_acc(rounds, glob_acc, T)
-        return sum(client_accs)/len(client_accs) 
-    
-    def server_update(self, models):
-        new_state_dict = {}
-        for key in models[0].keys():
-            new_state_dict[key] = torch.stack([models[i][key] for i in range(len(models))], dim=0).mean(dim=0)
-        return new_state_dict
+                    global accuracy: {sum(client_accs)/len(client_accs): .4f}, test_acc: {fin_acc: .4f}")
+        
+        pkl_path = f'{self.folder}{self.pkl_path}'
+        os.makedirs(pkl_path, exist_ok=True)
+        print(f'saving global model in {pkl_path}...')
+        torch.save(self._global_model.state_dict(), f'{self.folder}{self.pkl_path}/{self._E}_{self._B}_model.pth')
+        return glob_acc, client_accs, early_stop_epoch
+    '''
+    real aggregation that's called
+    '''        
+    def update_server_thread_res(self, T):
+        '''
+        FedAVG
+        '''
+        print('debuging... we are using fedavg')
+        client_acc = []
+        glob_acc = []
+        # length: T
+        rounds = np.arange(1, T+1, 1)
+        # TODO: add other dataset
+        if self.dataset == 'MNIST':
+            test_loader = MNIST(root='./data', train=True, download=True, transform=ToTensor())
+        elif self.dataset == 'shakespeare':
+            test_loader = ShakeSpeare(train=False)
+            test_loader = DataLoader(test_loader, batch_size=self._B)
+        
+        glob_acc, client_accs, early_stop_epoch = self.aggregate(glob_acc=glob_acc, T=T, test_loader=test_loader) 
 
+        print(f'rounds: {rounds}; test_acc: {glob_acc} T:{T}')
+        pkl_path = f'{self.folder}{self.pkl_path}'
+        os.makedirs(pkl_path, exist_ok=True)
+        print(f'saving in {pkl_path}')
+        with open(f'{self.folder}{self.pkl_path}/{self._E}_{self._B}.pkl','wb') as f:
+            pickle.dump((rounds, glob_acc, T), f) 
+        f.close()
+        if early_stop_epoch:
+            rounds = np.arange(1, early_stop_epoch+1, 1)  
+        self.plot_acc(rounds, glob_acc, T)
+        return sum(client_accs)/len(client_accs), glob_acc 
+
+    '''
+    TODO: finish the test past
+    '''
     def test_acc(self, test_loader):
-       self._global_model.eval() 
-       with torch.no_grad():
-           for x, y in test_loader:
-               print(f' {self._global_model(x)} {y}')
-               import sys
-               sys.exit()
+        acc_num = 0
+        total_num = 0
+        self._global_model.eval() 
+        self._global_model.to('cpu')
+        with torch.no_grad():
+          for inputs, labels in test_loader:
+                test_output = self._global_model(inputs)
+                pred_y = torch.max(test_output, 1)[1].data.squeeze()
+                num_equal = (pred_y == labels).sum().item()
+                acc_num += num_equal
+                total_num += 1
+        return acc_num/total_num
 
 
 

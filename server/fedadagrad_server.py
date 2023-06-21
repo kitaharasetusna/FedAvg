@@ -22,10 +22,10 @@ import math
 class ServerFedAdaGrade(ServerOPT):
     # client learning rate: eta_l
     # eta: server learning rate
-    def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, initial_mom={}, \
-        beta_1 = 0.9, eta= -1, tau=1e-3):
+    def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, folder, initial_mom={}, \
+        beta_1 = 0.9, eta= -1, tau=1e-3, algo='fedada'):
         print(client_ratio)
-        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio)
+        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, folder, algo=algo)
         # m_0
         self._cur_mom = {}
         self._veloc = {}
@@ -58,7 +58,7 @@ class ServerFedAdaGrade(ServerOPT):
         ret_dict = {}
         # x_t = x_{t-1} + eta*m_t/(sqrt(v_t)+tau)
         for key in  new_dict.keys():
-            ret_dict[key] =glob[key] + self._eta*self._cur_mom[key]/(torch.sqrt(self._veloc[key])+self._tau)
+            ret_dict[key] =glob[key].to('cuda') + self._eta*self._cur_mom[key].to('cuda')/(torch.sqrt(self._veloc[key].to('cuda'))+self._tau)
         
         return ret_dict
 

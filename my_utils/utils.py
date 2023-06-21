@@ -2,12 +2,19 @@ import argparse
 import sys
 sys.path.append('../')
 from models.my_NN import TwoLayerNet, CharLSTM
+from client.client_avg import ClientAVG
+from client.client_opt import ClientOPT
 
 function_map = {
     "TwoLayerNet": TwoLayerNet,
     "LSTM": CharLSTM
 }
 
+client_map = {
+    "fedavg": ClientAVG,
+    "fedopt": ClientOPT,
+    "fedada": ClientOPT
+}
 
 class ExpSetting():
     def __init__(self):
@@ -17,6 +24,7 @@ class ExpSetting():
         self.parser.add_argument('--dataset', choices=['MNIST', 'shakespeare'], \
             help='name of dataset, available choices: MNIST, shakespeare')
         self.parser.add_argument('--model', choices=['TwoLayerNet', 'LSTM']) 
+        self.parser.add_argument('--folder', type=str)
         
         # for client
         self.parser.add_argument('--num_client', type=int, default=10, \
@@ -25,7 +33,7 @@ class ExpSetting():
             help='number of clients')
         self.parser.add_argument('-E', '--round_client', type=int, default=200, \
             help='number of rounds on clients')
-        self.parser.add_argument('-B', '--size_batch', type=int, default=32, \
+        self.parser.add_argument('-B', '--size_batch', type=str, default='32', \
             help='batch size b on client')
         self.parser.add_argument('--eta_l', type=float, default=1e-3, \
             help='learning rate in client update, f_l in the paper')
@@ -44,9 +52,9 @@ class ExpSetting():
     def get_options(self):
         args = self.parser.parse_args()
         print(f'running algorithm {args.algo}..., dataset={args.dataset},  model={args.model}, T(server epoch)={args.num_round} \
-            , num_client={args.num_client},  \
+            , num_client={args.num_client},  folder={args.folder} \
                C={args.client_ratio}, E={args.round_client}, B={args.size_batch}, client lr={args.eta_l} \
                    eta={args.eta}, tau = {args.tau}')
         return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l, args.algo, args.client_ratio, args.beta_1, \
-            args.eta, args.tau, args.dataset, args.model
+            args.eta, args.tau, args.dataset, args.model, args.folder
     
