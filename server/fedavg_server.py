@@ -113,6 +113,7 @@ class ServerAVG():
     '''
     def plot_acc(self, rounds, acc, T):
         print(f'debuging... {len(rounds)} {len(acc)}')
+        plt.figure()
         plt.plot(rounds, acc, color='blue', label='accuracy')
         
         plt.xlabel('round')
@@ -161,14 +162,16 @@ class ServerAVG():
             fin_acc = self.test_acc(test_loader=test_loader)
             # lenth: T
             glob_acc.append(fin_acc)
-            if fin_acc>0.95:
-                early_stop_epoch = round+1
-                print('Congrates, Eearly stop, have reached 0.99 acc!')
-                break
+            
             
             print(f"Round {round+1} finished, global loss:  \
                 {sum(client_losses)/len(client_losses):.4f},  \
                     global accuracy: {sum(client_accs)/len(client_accs): .4f}, test_acc: {fin_acc: .4f}")
+            
+            if fin_acc>0.95:
+                early_stop_epoch = round+1
+                print('Congrates, Eearly stop, have reached 0.99 acc!')
+                break
         
         pkl_path = f'{self.folder}{self.pkl_path}'
         os.makedirs(pkl_path, exist_ok=True)

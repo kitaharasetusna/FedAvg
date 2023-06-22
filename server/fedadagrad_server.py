@@ -25,7 +25,7 @@ class ServerFedAdaGrade(ServerOPT):
     def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, folder, initial_mom={}, \
         beta_1 = 0.9, eta= -1, tau=1e-3, algo='fedada'):
         print(client_ratio)
-        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, folder, algo=algo)
+        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, shards_num, client_ratio, folder, algo=algo, eta=eta)
         # m_0
         self._cur_mom = {}
         self._veloc = {}

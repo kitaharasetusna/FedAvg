@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 
 from server.fedavg_server import ServerAVG
+import os
 
 
 
@@ -45,6 +46,8 @@ class ServerOPT(ServerAVG):
     def aggregate(self, glob_acc, T, test_loader):
         # 2: for t=0, ..., T-1 do
         early_stop_epoch = None
+        pkl_path = f'{self.folder}{self.pkl_path}'
+        os.makedirs(pkl_path, exist_ok=True)
         for round in range(T):
             print(f"Round {round+1} started...")
             print('debuging... we are upating de')
@@ -67,26 +70,26 @@ class ServerOPT(ServerAVG):
                 delta_t.append(delta_i_t)
                 client_losses.append(client_loss)
                 client_accs.append(client_acc)
-            # --end
-            fin_acc = self.test_acc(test_loader=test_loader)
-            # lenth: T
-            glob_acc.append(fin_acc)
+            
             
             
             global_state_dict = self.server_update(delta_t, x_t)
             self._global_model.load_state_dict(global_state_dict) 
+            
+            
+            # --end
+            fin_acc = self.test_acc(test_loader=test_loader)
+            # lenth: T
+            glob_acc.append(fin_acc)
+            print(f"Round {round+1} finished, global loss:  \
+                {sum(client_losses)/len(client_losses):.4f},  \
+                    global accuracy: {sum(client_accs)/len(client_accs): .4f} , test_acc: {fin_acc: .4f}")
             if fin_acc>0.95:
                 early_stop_epoch = round+1
                 print('Congrates, Eearly stop, have reached 0.99 acc!')
                 break
-            
-            
-            print(f"Round {round+1} finished, global loss:  \
-                {sum(client_losses)/len(client_losses):.4f},  \
-                    global accuracy: {sum(client_accs)/len(client_accs): .4f}")
 
-        pkl_path = f'{self.folder}{self.pkl_path}'
-        os.makedirs(pkl_path, exist_ok=True)
+        
         print(f'saving global model in {pkl_path}...')
         torch.save(self._global_model.state_dict(), f'{self.folder}{self.pkl_path}/{self._E}_{self._B}_model.pth')
 
