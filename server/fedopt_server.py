@@ -23,11 +23,15 @@ import os
 
 class ServerOPT(ServerAVG):
     def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, \
-        learning_rate, device, shards_num, client_ratio, folder, eta,  algo='fedopt'):
-        super().__init__(dataset, network, train_data, num_clients, E, client_batch_size, \
-        learning_rate, device, shards_num, client_ratio, folder, algo=algo)
+        learning_rate, device, shards_num, client_ratio, folder, args, eta,  algo='fedopt'):
+        super().__init__(dataset=dataset, network=network, train_data=train_data,  \
+            num_clients=num_clients, E=E, client_batch_size=client_batch_size, \
+        learning_rate=learning_rate, device=device, shards_num=shards_num, \
+            client_ratio=client_ratio, folder=folder, args=args, algo=algo)
         self._eta = eta
         self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_eta_{eta}_eta_l_{learning_rate}'
+        if args.attack_type:
+            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_eta_{eta}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
         
     def server_update(self, deltas, glob):
         new_dict = {}

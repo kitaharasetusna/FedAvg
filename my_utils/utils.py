@@ -2,8 +2,8 @@ import argparse
 import sys
 sys.path.append('../')
 from models.my_NN import TwoLayerNet, CharLSTM
-from client.client_avg import ClientAVG
-from client.client_opt import ClientOPT
+from client.client_avg import ClientAVG, ComproClientAVG
+from client.client_opt import ClientOPT, CompromisedClientOPT
 
 function_map = {
     "TwoLayerNet": TwoLayerNet,
@@ -12,19 +12,26 @@ function_map = {
 
 client_map = {
     "fedavg": ClientAVG,
+    "fedavgC": ComproClientAVG,
     "fedopt": ClientOPT,
-    "fedada": ClientOPT
+    "fedoptC": CompromisedClientOPT, 
+    "fedada": ClientOPT,
+    "fedadaC": CompromisedClientOPT
 }
 
 class ExpSetting():
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='experiment settings')
-        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt', 'fedadag'], \
+        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt', 'fedadag', 'krum', 'trimmed_mean', 'fang'], \
             help='choose algorithm for FL learning')
         self.parser.add_argument('--dataset', choices=['MNIST', 'shakespeare'], \
             help='name of dataset, available choices: MNIST, shakespeare')
         self.parser.add_argument('--model', choices=['TwoLayerNet', 'LSTM']) 
         self.parser.add_argument('--folder', type=str)
+
+        # for dataset
+        # TODO: finish
+        self.parser.add_argument('--do_idd', type=float, default=1.0 )
         
         # for client
         self.parser.add_argument('--num_client', type=int, default=10, \
@@ -47,6 +54,13 @@ class ExpSetting():
             help='server learning rate')
         self.parser.add_argument('--tau', type=float, default=1e-3, \
             help='hyper-param for updating')
+
+        
+        #--- attack and defense
+        self.parser.add_argument('--com_ratio', type=float, default=0)
+        self.parser.add_argument('--attack_type', choices=[None, 'guanssian', 'label_f', 'partial_know', 'full_know'], default=None)
+
+        
         
         
     def get_options(self):
@@ -56,5 +70,5 @@ class ExpSetting():
                C={args.client_ratio}, E={args.round_client}, B={args.size_batch}, client lr={args.eta_l} \
                    eta={args.eta}, tau = {args.tau}')
         return args.num_round, args.num_client, args.round_client, args.size_batch, args.eta_l, args.algo, args.client_ratio, args.beta_1, \
-            args.eta, args.tau, args.dataset, args.model, args.folder
+            args.eta, args.tau, args.dataset, args.model, args.folder, args
     

@@ -28,15 +28,24 @@ from my_utils.dataset import ShakeSpeare
 
 
 class ServerAVG():
-    def __init__(self, dataset, network, train_data, num_clients, E, client_batch_size, learning_rate, device, \
-        shards_num, client_ratio, folder, algo='fedavg'):
+    def __init__(self, dataset, network, train_data, num_clients, E, \
+        client_batch_size, learning_rate, device, \
+        shards_num, client_ratio, folder, args, algo='fedavg'):
+
+        self.args = args
         self.algo = algo
         # TODO: clean the code and adjust heritance in fedavg
         #TODO: keep eye on MNIST model, it can be updated from scalar to variable 
         # intermediate parameters
         self._num_clients = num_clients
-        
+       
+        # attack: selecting compromised clients
+        if args.com_ratio > 0:
+            self.compromised_idxs = compromised_clients(args)
+        else:
+            self.compromised_idxs = [] 
 
+        
         # parameters for Clients
         self.dataset = dataset
         if dataset=='shakespeare':
@@ -66,7 +75,11 @@ class ServerAVG():
             shuffle=True) for i in range(num_clients)]
             self._clients = [client_map[algo](self._client_loaders[i], \
                 self._clients_models[i], self._clients_optims[i],  \
-                    device, E, len(self._client_datasets[0])) for i in range(num_clients)]
+                    device, E, len(self._client_datasets[0]), args) if i not in self.compromised_idxs else
+                client_map[algo+'C'](self._client_loaders[i], \
+                self._clients_models[i], self._clients_optims[i],  \
+                    device, E, len(self._client_datasets[0]), args)
+                             for i in range(num_clients)]
             self._B = len(self._client_datasets[0]) 
         else:
             batch_size = int(client_batch_size)
@@ -75,7 +88,10 @@ class ServerAVG():
                 shuffle=True) for i in range(num_clients)]
             self._clients = [client_map[algo](self._client_loaders[i], \
                 self._clients_models[i], self._clients_optims[i],  \
-                    device, E, batch_size) for i in range(num_clients)]
+                    device, E, batch_size, args) if i not in self.compromised_idxs else
+                            client_map[algo+'C'](self._client_loaders[i], \
+                self._clients_models[i], self._clients_optims[i],  \
+                    device, E, batch_size, args) for i in range(num_clients)]
             self._B = batch_size
         
         
@@ -92,6 +108,8 @@ class ServerAVG():
        
         self.folder = folder
         self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_eta_l_{learning_rate}'
+        if args.attack_type:
+            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
        
         print(self.folder)
         print(self.pkl_path+str(10)+'.png')
@@ -229,4 +247,11 @@ class ServerAVG():
         return acc_num/total_num
 
 
+
+def compromised_clients(args):
+    max_num = max(int(args.com_ratio * args.num_client), 1)
+    tmp_idx = [i for i in range(args.num_client)]
+    compromised_idxs = random.sample(tmp_idx, max_num)
+
+    return compromised_idxs
 

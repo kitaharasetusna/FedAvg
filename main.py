@@ -25,16 +25,21 @@ from my_utils.utils import ExpSetting
 
 
 # Define the main Federated Learning function
-def federated_learning(model,dataset,  T, train_data, num_clients, E, B, learning_rate, device, algo, client_ratio, folder, \
+def federated_learning(model,dataset,  T, train_data, num_clients, E, B, \
+    learning_rate, device, algo, client_ratio, folder, args, \
     shards_num=200, beta_1=None, eta=None, tau=None):
     # Split the train data into subsets for each client
     # data, C?, B, lr, device, shard_num
+    
     if algo =='fedopt':
-        server = ServerOPT(dataset, model, train_data, num_clients, E, B, learning_rate, device, shards_num, client_ratio, folder=folder, eta=eta)  
+        server = ServerOPT(dataset, model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args, eta=eta)  
     elif algo == 'fedavg':
-        server = ServerAVG(dataset,model, train_data, num_clients, E, B, learning_rate, device, shards_num, client_ratio, folder=folder)  
+        server = ServerAVG(dataset,model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args)  
     elif algo == 'fedadag':
-        server = ServerFedAdaGrade(dataset, model, train_data, num_clients, E, B, learning_rate, device, shards_num, client_ratio, folder=folder,\
+        server = ServerFedAdaGrade(dataset, model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args,\
                 initial_mom={}, beta_1=beta_1, eta=eta, tau=tau)
     fin_acc, glob_acc = server.update_server_thread_res(T)
     # TODO: add more other datasets
@@ -51,7 +56,7 @@ if __name__ == '__main__':
     
     # Set the hyperparameters
     exp_settings = ExpSetting()
-    num_rounds, num_clients, E, B, learning_rate, algo, client_ratio, beta_1, eta, tau, dataset, model, folder = exp_settings.get_options()
+    num_rounds, num_clients, E, B, learning_rate, algo, client_ratio, beta_1, eta, tau, dataset, model, folder, args = exp_settings.get_options()
     
     # Load the MNIST dataset
     if dataset == 'MNIST':
@@ -65,7 +70,8 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'you are using device: {device}...')
     # Run the Federated Learning process
-    global_model, fin_acc, test_acc = federated_learning(model, dataset, num_rounds, train_data, num_clients, E, B, learning_rate, device, algo, client_ratio, folder,
+    global_model, fin_acc, test_acc = federated_learning(model, dataset, num_rounds, train_data, num_clients, E, B, learning_rate, device, \
+        algo, client_ratio, folder, args, 
                                                beta_1=beta_1, eta=eta, tau=tau)
     print(f'final train accuracy: {fin_acc :.4f}, test accuracy: {test_acc}')
     print(test_acc)

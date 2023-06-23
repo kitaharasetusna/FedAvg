@@ -48,19 +48,32 @@ def fedavg_MNIST_TwoLayerNet(T, E, B):
 
 
 def fedopt_MNIST_TwoLayerNet(T, E, B): 
-    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} --algo fedopt --num_client 100 --folder data/test_acc/MNIST/' 
+    eta_l = 1e-2
+    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} \
+        --algo fedopt --num_client 100 --folder data/test_acc/MNIST/ --eta 1 --eta_l {eta_l}' 
     os.system(command)
 
-def fedavg_MNIST_TwoLayerNet_acc_paint():
+def MNIST_TwoLayerNet_acc_paint(algo='fedavg'):
     E = [1, 5, 20]
     B = [600, 10, 50]
     for e in E:
         for b in B:
-            fedavg_MNIST_TwoLayerNet(100, e, b)
+            if algo=='fedavg': 
+                fedavg_MNIST_TwoLayerNet(100, e, b)
+            elif algo=='fedopt':
+                fedopt_MNIST_TwoLayerNet(100, e, b)
+            elif algo=='fedadag':
+                fedada_MNIST_TwoLayerNet(100, e, b)
     # folder_path = 'data/test_acc/MNIST/'
 
-def fedavg_MNIST_TwoLayerNet_acc_paint_plot():
-    my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedavg_num_Client_100_eta_l_0.001\\'
+def MNIST_TwoLayerNet_acc_paint_plot(algo='fedavg'):
+    if algo=='fedavg':
+        my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedavg_num_Client_100_eta_l_0.001\\'
+    elif algo == 'fedadag':
+        my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedada_num_Client_100_eta_0.31622776601683794_eta_l_0.01\\'
+    elif algo == 'fedopt':
+        # TODO: change this
+        my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedada_num_Client_100_eta_0.31622776601683794_eta_l_0.01\\'
     E = [1, 5, 20]
     B = [600, 10, 50]
     for e in E:
@@ -74,10 +87,10 @@ def fedavg_MNIST_TwoLayerNet_acc_paint_plot():
             plt.plot(rounds, glob_acc, label= f'E: {e} B: {b}')
     plt.xlabel('round')
     plt.ylabel('accuracy')
-    plt.title('fedavg acc on MNIST(TwoLayerNN)')
+    plt.title(f'{algo} acc on MNIST(TwoLayerNN)')
     plt.legend()
     plt.xlim(0, 100)
-    plt.savefig(my_path+'/acc_fedavg_MNIST_100_lr_0.001.jpg')
+    plt.savefig(my_path+f'/acc_{algo}_MNIST_100_lr_0.001.jpg')
 
 # 1. -- end. acc MNIST fedavg NN  
 
@@ -86,7 +99,9 @@ def fedopt_MNIST_TwoLayerNet(T, E, B):
     os.system(command)
 
 def fedada_MNIST_TwoLayerNet(T, E, B):
-    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} --algo fedadag --num_client 100 --folder data/test_acc/MNIST/' 
+    eta = 10**-0.5
+    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} --algo fedadag --num_client 100 \
+        --eta {eta} --eta_l 1e-2 --folder data/test_acc/MNIST/' 
     os.system(command)
 
 # 2. --st  
@@ -238,34 +253,91 @@ def fedada_grid_searching_MNIST_epoch_100(E, B, train=True):
     # Display the plot
     plt.show() 
 
+# 3. --st
+def attack_MNIST(algo, T, E, B, attack_type, comp_ratio):
+    command = f'python ./main.py --model TwoLayerNet \
+        --dataset MNIST -T {T} -E {E} -B {B} --algo {algo} \
+            --num_client 100 --folder data/test_acc_attack/MNIST/ \
+        --attack_type {attack_type} --com_ratio {comp_ratio}' 
+    os.system(command)
 
-def exp1():
-    fedavg_MNIST_TwoLayerNet_acc_paint() 
-    fedavg_MNIST_TwoLayerNet_acc_paint_plot()    
+def attack_MNIST_plot(E=5, B=50, algo='fedavg'):
+    path = 'data\\test_acc_attack\\MNIST\\' 
+    accs = [] 
+    for comp_ratio in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]:
+        if algo=='fedavg':
+            sub = f'MNIST_label_f_TwoLayerNet_{algo}_num_Client_100_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
+        elif algo=='fedopt':
+            sub = f'MNIST_label_f_TwoLayerNet_{algo}_num_Client_100_eta_0.6666666666666666_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
+        elif algo=='fedadag':
+            sub = f'MNIST_label_f_TwoLayerNet_fedada_num_Client_100_eta_0.6666666666666666_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
+        with open(path+sub, 'rb') as temp_file:
+            rounds, acc, T = pickle.load(temp_file)
+            accs.append(acc[-1])
+        temp_file.close()
+    x= [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    accs = [1-acc for acc in accs]
+
+    with open(path+f'test_error_of_{algo}_on_MNIST_for_label_flipping.pkl', 'wb') as file:
+        pickle.dump((x, accs), file=file)
+    file.close()
+    plt.figure()
+    plt.plot(x, accs, '--o')
+    plt.title(f'Testing error rates of {algo} on MNIST for label flipping.')
+    plt.xlabel('Percentage of compromised clients')
+    plt.ylabel('Error Rate')
+    plt.savefig(path+f'impace_of_compromised_ratio_{algo}.jpg')
+    plt.show() 
+    print(accs)
+
+def exp1(algo='fedavg'):
+    MNIST_TwoLayerNet_acc_paint(algo=algo) 
+    # MNIST_TwoLayerNet_acc_paint_plot(algo=algo)    
 
 def exp2():
-    # fedopt_MNIST_TwoLayerNet_acc_paint() 
-    # fedopt_MNIST_TwoLayerNet_acc_paint_plot()
-    # fedopt_MNIST_TwoLayerNet(T=5, E=5, B=50)
-    # fedavg_MNIST_TwoLayerNet(T=5, E=5, B=50)
-    fedopt_grid_searching_MNIST_epoch_100(1, 10, train=False)
-    # fedada_grid_searching_MNIST_epoch_100(5, 50)
+    # fedopt_grid_searching_MNIST_epoch_100(1, 10, train=False)
+    fedada_grid_searching_MNIST_epoch_100(1, 10)
 
-if __name__ == '__main__':
-    # fedavg_shakespeare_charLSTM_epoch_90_E_1_B_10()
-    # fedopt_shakespeare_charLSTM_epoch_90_E_1_B_10()
-    # fedada_shakespeare_charLSTM_epoch_90_E_1_B_10()
+def exp3():
+    for algo in ['fedadag']:
+        for comp_ratio in [0, 0.2, 0.4, 0.6, 0.8, 1.0]:
+            attack_MNIST(algo=algo,T=5, E=5, B=50, attack_type='label_f', comp_ratio=comp_ratio)
+
+def exp3_plot():
+    plt.figure()
+    my_path = 'data/test_acc_attack/MNIST/'
+    color = ['purple', 'aqua', 'coral']
+    i = 0
+    for algo in ['fedavg', 'fedopt', 'fedadag']:
+        sub = f'test_error_of_{algo}_on_MNIST_for_label_flipping.pkl'
+        with open(my_path+sub, 'rb') as temp_file:
+            x, accs = pickle.load(temp_file) 
+            plt.plot(x, accs, '--o', color=color[i], label=algo)
+            plt.xlabel('Percentage of compromised clients')
+            plt.ylabel('Error Rate')
+        temp_file.close()
+        i += 1
+    plt.title('Testing error rates on MNIST for label flipping.')
+    plt.legend()
+    plt.savefig(my_path+f'impace_of_compromised_ratio.jpg')
+    plt.show()
     
-    # fedavg_MNIST_TwoLayerNet(5, 1, 10)
-    # fedopt_MNIST_TwoLayerNet(5, 1, 10)
-    # fedada_MNIST_TwoLayerNet(5, 1, 10)
+
+    
+if __name__ == '__main__':
+    
 
     # McMahan fig2.(b) non-IID acc MNIST fedavg 
-    # exp1() 
+    # exp1(algo='fedadag') 
+    # exp1(algo='fedopt')
     
     # grid_searching_MNIST_epoch_100(1, 10)
     # Reddit fig2. 
-    # TODO: change this into validation set, now it's on test set
-    exp2()
+    # exp2()
     
-    # grid_searching_MNIST_epoch_100(1, 2)
+    # attack_MNIST_plot(algo='fedadag') 
+    # exp3()
+    exp3_plot()
+
+    
+    
