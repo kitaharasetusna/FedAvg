@@ -2,6 +2,8 @@
 Simple implementation of fedavg, fedopt, adagrade(finished) and other adaptive learning(TODO) for learning and researching purpose <br>
 I added early stopping, if you want to get the full graph, please remove it.
 
+I also add simple attacks like label flipping
+
 # 1. Training the model
 To run this code, run `experiment.py` use: <br>
 ``
