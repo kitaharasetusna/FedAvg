@@ -16,3 +16,5 @@ For documentation details, please refer to `./doc/*` .
 ![grid search on MNIST using fedopt](https://github.com/kitaharasetusna/FedAvg/assets/116760304/6418b5e3-f605-4ce6-9e1e-67ed568f3667)
 
 ![test accuracy on MNIST using fedavg](https://github.com/kitaharasetusna/FedAvg/assets/116760304/6484db25-3146-47ec-ab5c-f048f1e5a67f)
+
+![image](https://github.com/kitaharasetusna/FedAvg/assets/116760304/7fbf3654-1d1f-4b89-84b7-eb388dedfb25)
