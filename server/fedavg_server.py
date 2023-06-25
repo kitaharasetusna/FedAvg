@@ -107,9 +107,9 @@ class ServerAVG():
         self._client_ratio = client_ratio
        
         self.folder = folder
-        self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_eta_l_{learning_rate}'
+        self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_T_{args.num_round}_eta_l_{learning_rate}'
         if args.attack_type:
-            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
+            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_T_{args.num_round}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
        
         print(self.folder)
         print(self.pkl_path+str(10)+'.png')
@@ -186,7 +186,7 @@ class ServerAVG():
                 {sum(client_losses)/len(client_losses):.4f},  \
                     global accuracy: {sum(client_accs)/len(client_accs): .4f}, test_acc: {fin_acc: .4f}")
             
-            if fin_acc>0.95:
+            if fin_acc>0.98:
                 early_stop_epoch = round+1
                 print('Congrates, Eearly stop, have reached 0.99 acc!')
                 break
@@ -211,6 +211,7 @@ class ServerAVG():
         # TODO: add other dataset
         if self.dataset == 'MNIST':
             test_loader = MNIST(root='./data', train=True, download=True, transform=ToTensor())
+            test_loader = DataLoader(test_loader, batch_size=self._B)
         elif self.dataset == 'shakespeare':
             test_loader = ShakeSpeare(train=False)
             test_loader = DataLoader(test_loader, batch_size=self._B)
@@ -243,7 +244,7 @@ class ServerAVG():
                 pred_y = torch.max(test_output, 1)[1].data.squeeze()
                 num_equal = (pred_y == labels).sum().item()
                 acc_num += num_equal
-                total_num += 1
+                total_num += labels.size()[0]
         return acc_num/total_num
 
 

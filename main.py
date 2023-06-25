@@ -18,6 +18,7 @@ from torch.utils.data import Dataset
 from server.fedavg_server import ServerAVG
 from server.fedopt_server import ServerOPT
 from server.fedadagrad_server import ServerFedAdaGrade
+from server.krum_avg import ServerKrum
 
 from models.my_NN import TwoLayerNet
 from my_utils.utils import ExpSetting
@@ -37,6 +38,9 @@ def federated_learning(model,dataset,  T, train_data, num_clients, E, B, \
     elif algo == 'fedavg':
         server = ServerAVG(dataset,model, train_data, num_clients, E, B, \
             learning_rate, device, shards_num, client_ratio, folder=folder, args=args)  
+    elif algo == 'krum':
+       server = ServerKrum(dataset,model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args)   
     elif algo == 'fedadag':
         server = ServerFedAdaGrade(dataset, model, train_data, num_clients, E, B, \
             learning_rate, device, shards_num, client_ratio, folder=folder, args=args,\
@@ -67,8 +71,10 @@ if __name__ == '__main__':
     else:
         print('ERROR: WRONG dataset'); import sys; sys.exit()
     # Check if GPU is available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f'you are using device: {device}...')
+    device_ava = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(args.device)
+    print(f'{type(device)} {type(device_ava)} {device==device_ava}')
+    assert device==device_ava, f"{device} is not available, please use {device_ava}"
     # Run the Federated Learning process
     global_model, fin_acc, test_acc = federated_learning(model, dataset, num_rounds, train_data, num_clients, E, B, learning_rate, device, \
         algo, client_ratio, folder, args, 

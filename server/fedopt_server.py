@@ -29,9 +29,9 @@ class ServerOPT(ServerAVG):
         learning_rate=learning_rate, device=device, shards_num=shards_num, \
             client_ratio=client_ratio, folder=folder, args=args, algo=algo)
         self._eta = eta
-        self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_eta_{eta}_eta_l_{learning_rate}'
+        self.pkl_path = f'{dataset}_{network}_{algo}_num_Client_{num_clients}_T_{args.num_round}_eta_{eta}_eta_l_{learning_rate}'
         if args.attack_type:
-            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_eta_{eta}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
+            self.pkl_path = f'{dataset}_{args.attack_type}_{network}_{algo}_num_Client_{num_clients}_T_{args.num_round}_eta_{eta}_eta_l_{learning_rate}_compromised_ratio_{args.com_ratio}'
         
     def server_update(self, deltas, glob):
         new_dict = {}
@@ -88,7 +88,7 @@ class ServerOPT(ServerAVG):
             print(f"Round {round+1} finished, global loss:  \
                 {sum(client_losses)/len(client_losses):.4f},  \
                     global accuracy: {sum(client_accs)/len(client_accs): .4f} , test_acc: {fin_acc: .4f}")
-            if fin_acc>0.95:
+            if fin_acc>0.98:
                 early_stop_epoch = round+1
                 print('Congrates, Eearly stop, have reached 0.99 acc!')
                 break

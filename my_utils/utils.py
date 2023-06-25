@@ -16,7 +16,9 @@ client_map = {
     "fedopt": ClientOPT,
     "fedoptC": CompromisedClientOPT, 
     "fedada": ClientOPT,
-    "fedadaC": CompromisedClientOPT
+    "fedadaC": CompromisedClientOPT,
+    "krum": ClientAVG,
+    "krumC": ComproClientAVG
 }
 
 class ExpSetting():
@@ -28,6 +30,7 @@ class ExpSetting():
             help='name of dataset, available choices: MNIST, shakespeare')
         self.parser.add_argument('--model', choices=['TwoLayerNet', 'LSTM']) 
         self.parser.add_argument('--folder', type=str)
+        self.parser.add_argument('--device', type=str, default='cuda')
 
         # for dataset
         # TODO: finish

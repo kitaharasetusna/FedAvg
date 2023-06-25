@@ -41,29 +41,46 @@ def fedada_shakespeare_charLSTM_epoch_90_E_1_B_10():
     # run the command using subprocess
     os.system(command)
 
+def fed_defense(defense, dataset, model, T, E, B):
+    command = f'python ./main.py --model {model} --dataset {dataset} -T {T} \
+        -E {E} -B {B} --algo {defense} --num_client 100 --folder data/test_acc/{dataset}/ \
+            --client_ratio 0.1 --com_ratio 0.5' 
+    os.system(command)
+    
 # -- 1. st. acc MNIST fedavg NN
-def fedavg_MNIST_TwoLayerNet(T, E, B): 
-    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} --algo fedavg --num_client 100 --folder data/test_acc/MNIST/' 
+def fedavg(dataset, model,T, E, B): 
+    command = f'python ./main.py --model {model} --dataset {dataset} -T {T} \
+        -E {E} -B {B} --algo fedavg --num_client 100 --folder data/test_acc/{dataset}/ \
+            --client_ratio 0.1' 
     os.system(command)
 
 
-def fedopt_MNIST_TwoLayerNet(T, E, B): 
+def fedopt(dataset, model,T, E, B): 
+    eta = 1
+    eta_l = 1e-2 
+    command = f'python ./main.py --model {model} --dataset {dataset} -T {T} \
+        -E {E} -B {B} --algo fedopt --num_client 100 --folder data/test_acc/{dataset}/' 
+    os.system(command)
+
+def fedadag(dataset, model,T, E, B): 
+    eta = 10**-0.5
     eta_l = 1e-2
-    command = f'python ./main.py --model TwoLayerNet --dataset MNIST -T {T} -E {E} -B {B} \
-        --algo fedopt --num_client 100 --folder data/test_acc/MNIST/ --eta 1 --eta_l {eta_l}' 
+    command = f'python ./main.py --model {model} --dataset {dataset} -T {T} \
+        -E {E} -B {B} --algo fedadag --num_client 100 --folder data/test_acc/{dataset}/ \
+            --eta {eta} --eta_l {eta_l}' 
     os.system(command)
 
-def MNIST_TwoLayerNet_acc_paint(algo='fedavg'):
+def acc_test(algo='fedavg', dataset='MNIST', model='TwoLayerNet', T=20):
     E = [1, 5, 20]
-    B = [600, 10, 50]
+    B = [100, 10, 50]
     for e in E:
         for b in B:
             if algo=='fedavg': 
-                fedavg_MNIST_TwoLayerNet(100, e, b)
+                fedavg(dataset=dataset,model=model,T=T, E=e, B=b)
             elif algo=='fedopt':
-                fedopt_MNIST_TwoLayerNet(100, e, b)
+                fedopt(dataset=dataset, model=model, T=T, E=e, B=b)
             elif algo=='fedadag':
-                fedada_MNIST_TwoLayerNet(100, e, b)
+                fedadag(dataset=dataset, model=model, T=T, E=e, B=b)
     # folder_path = 'data/test_acc/MNIST/'
 
 def MNIST_TwoLayerNet_acc_paint_plot(algo='fedavg'):
@@ -73,7 +90,7 @@ def MNIST_TwoLayerNet_acc_paint_plot(algo='fedavg'):
         my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedada_num_Client_100_eta_0.31622776601683794_eta_l_0.01\\'
     elif algo == 'fedopt':
         # TODO: change this
-        my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedada_num_Client_100_eta_0.31622776601683794_eta_l_0.01\\'
+        my_path = 'data\\test_acc\MNIST\MNIST_TwoLayerNet_fedopt_num_Client_100_eta_0.6666666666666666_eta_l_0.001\\'
     E = [1, 5, 20]
     B = [600, 10, 50]
     for e in E:
@@ -253,12 +270,14 @@ def fedada_grid_searching_MNIST_epoch_100(E, B, train=True):
     # Display the plot
     plt.show() 
 
+
+# attack
 # 3. --st
-def attack_MNIST(algo, T, E, B, attack_type, comp_ratio):
+def attack_MNIST(algo, T, E, B,eta, eta_l, attack_type, comp_ratio):
     command = f'python ./main.py --model TwoLayerNet \
         --dataset MNIST -T {T} -E {E} -B {B} --algo {algo} \
             --num_client 100 --folder data/test_acc_attack/MNIST/ \
-        --attack_type {attack_type} --com_ratio {comp_ratio}' 
+        --attack_type {attack_type} --com_ratio {comp_ratio} --eta {eta} --eta_l {eta_l}' 
     os.system(command)
 
 def attack_MNIST_plot(E=5, B=50, algo='fedavg'):
@@ -270,6 +289,7 @@ def attack_MNIST_plot(E=5, B=50, algo='fedavg'):
         elif algo=='fedopt':
             sub = f'MNIST_label_f_TwoLayerNet_{algo}_num_Client_100_eta_0.6666666666666666_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
         elif algo=='fedadag':
+            # sub = f'MNIST_label_f_TwoLayerNet_fedada_num_Client_100_eta_0.6666666666666666_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
             sub = f'MNIST_label_f_TwoLayerNet_fedada_num_Client_100_eta_0.6666666666666666_eta_l_0.001_compromised_ratio_{comp_ratio}\\{E}_{B}.pkl'
         with open(path+sub, 'rb') as temp_file:
             rounds, acc, T = pickle.load(temp_file)
@@ -290,8 +310,9 @@ def attack_MNIST_plot(E=5, B=50, algo='fedavg'):
     plt.show() 
     print(accs)
 
-def exp1(algo='fedavg'):
-    MNIST_TwoLayerNet_acc_paint(algo=algo) 
+def exp1(dataset='MNIST', model='TwoLayerNet', T=20):
+    for algo in ['fedadag', 'fedavg', 'fedopt']:
+        acc_test(algo=algo, dataset=dataset, model=model, T=T) 
     # MNIST_TwoLayerNet_acc_paint_plot(algo=algo)    
 
 def exp2():
@@ -299,9 +320,11 @@ def exp2():
     fedada_grid_searching_MNIST_epoch_100(1, 10)
 
 def exp3():
-    for algo in ['fedadag']:
-        for comp_ratio in [0, 0.2, 0.4, 0.6, 0.8, 1.0]:
-            attack_MNIST(algo=algo,T=5, E=5, B=50, attack_type='label_f', comp_ratio=comp_ratio)
+    # algos = ['krum', 'fedavg', 'fedopt', 'fedadag']
+    algos = ['krum']
+    for algo in algos :
+        for comp_ratio in [0.2, 0.4, 0.6, 0.8, 1.0]:
+            attack_MNIST(algo=algo,T=20, E=5, B=50, eta=10**-0.5, eta_l=1e-2,attack_type='label_f', comp_ratio=comp_ratio)
 
 def exp3_plot():
     plt.figure()
@@ -328,16 +351,20 @@ if __name__ == '__main__':
     
 
     # McMahan fig2.(b) non-IID acc MNIST fedavg 
-    # exp1(algo='fedadag') 
+    # exp1(dataset='shakespeare', model='LSTM', T=20) 
     # exp1(algo='fedopt')
     
     # grid_searching_MNIST_epoch_100(1, 10)
     # Reddit fig2. 
     # exp2()
-    
+   
+    # Impact of  
+    exp3()
     # attack_MNIST_plot(algo='fedadag') 
-    # exp3()
-    exp3_plot()
+    # exp3_plot()
+    # fed_defense(defense='krum', dataset='MNIST', model='TwoLayerNet', T=2, E=5, B=50)
+
+
 
     
     
