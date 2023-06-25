@@ -18,13 +18,17 @@ client_map = {
     "fedada": ClientOPT,
     "fedadaC": CompromisedClientOPT,
     "krum": ClientAVG,
-    "krumC": ComproClientAVG
+    "krumC": ComproClientAVG,
+    "krumopt": ClientOPT,
+    "krumoptC": CompromisedClientOPT,
+    "krumada": ClientOPT,
+    "krumadaC": CompromisedClientOPT
 }
 
 class ExpSetting():
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='experiment settings')
-        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt', 'fedadag', 'krum', 'trimmed_mean', 'fang'], \
+        self.parser.add_argument('--algo', choices=['fedavg', 'fedopt', 'fedadag', 'krum', 'krumopt','krumadag', 'trimmed_mean', 'fang'], \
             help='choose algorithm for FL learning')
         self.parser.add_argument('--dataset', choices=['MNIST', 'shakespeare'], \
             help='name of dataset, available choices: MNIST, shakespeare')

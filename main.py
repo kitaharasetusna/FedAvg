@@ -19,6 +19,8 @@ from server.fedavg_server import ServerAVG
 from server.fedopt_server import ServerOPT
 from server.fedadagrad_server import ServerFedAdaGrade
 from server.krum_avg import ServerKrum
+from server.krum_opt import ServerKrumOPT
+from server.krum_adagrad import ServerKrumadagrade
 
 from models.my_NN import TwoLayerNet
 from my_utils.utils import ExpSetting
@@ -43,6 +45,13 @@ def federated_learning(model,dataset,  T, train_data, num_clients, E, B, \
             learning_rate, device, shards_num, client_ratio, folder=folder, args=args)   
     elif algo == 'fedadag':
         server = ServerFedAdaGrade(dataset, model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args,\
+                initial_mom={}, beta_1=beta_1, eta=eta, tau=tau)
+    elif algo == 'krumopt':
+        server = ServerKrumOPT(dataset, model, train_data, num_clients, E, B, \
+            learning_rate, device, shards_num, client_ratio, folder=folder, args=args, eta=eta) 
+    elif algo == 'krumadag':
+        server = ServerKrumadagrade(dataset, model, train_data, num_clients, E, B, \
             learning_rate, device, shards_num, client_ratio, folder=folder, args=args,\
                 initial_mom={}, beta_1=beta_1, eta=eta, tau=tau)
     fin_acc, glob_acc = server.update_server_thread_res(T)

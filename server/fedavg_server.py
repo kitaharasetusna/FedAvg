@@ -203,7 +203,7 @@ class ServerAVG():
         '''
         FedAVG
         '''
-        print('debuging... we are using fedavg')
+        print(f'debuging... we are using {self.args.algo}')
         client_acc = []
         glob_acc = []
         # length: T

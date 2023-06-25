@@ -76,7 +76,7 @@ class ComproClientAVG(ClientAVG):
         for _ in range(self._E):
             for inputs, labels in self._dataloader:
                 inputs, labels = inputs.to(self._device), labels.to(self._device)
-                if attack_type =='label_f' and args.dataset=='MNIST':
+                if attack_type =='label_f' and self.args.dataset=='MNIST':
                     labels = 10-labels-1
                 self._optimizer.zero_grad()
                 outputs = self._model(inputs)

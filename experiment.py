@@ -321,7 +321,9 @@ def exp2():
 
 def exp3():
     # algos = ['krum', 'fedavg', 'fedopt', 'fedadag']
-    algos = ['krum']
+    # algos = ['krum']
+    # algos = ['krumadag']
+    algos = ['fedadag']
     for algo in algos :
         for comp_ratio in [0.2, 0.4, 0.6, 0.8, 1.0]:
             attack_MNIST(algo=algo,T=20, E=5, B=50, eta=10**-0.5, eta_l=1e-2,attack_type='label_f', comp_ratio=comp_ratio)
@@ -362,7 +364,7 @@ if __name__ == '__main__':
     exp3()
     # attack_MNIST_plot(algo='fedadag') 
     # exp3_plot()
-    # fed_defense(defense='krum', dataset='MNIST', model='TwoLayerNet', T=2, E=5, B=50)
+    # fed_defense(defense='krumopt', dataset='MNIST', model='TwoLayerNet', T=2, E=5, B=50)
 
 
 

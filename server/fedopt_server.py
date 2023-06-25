@@ -54,7 +54,6 @@ class ServerOPT(ServerAVG):
         os.makedirs(pkl_path, exist_ok=True)
         for round in range(T):
             print(f"Round {round+1} started...")
-            print('debuging... we are upating de')
             client_losses = []
             client_accs = []
             delta_t = []
